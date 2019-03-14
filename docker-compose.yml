@@ -1,0 +1,54 @@
+version: '3'
+services:
+
+  broker-tester:
+    build: .
+    expose:
+      - 8080
+    ports:
+      - 48081:8080
+    depends_on:
+      - nats-streaming-1
+      - nats-streaming-2
+      - nats-streaming-3
+    volumes:
+      - ./docker/config/broker-tester-application.properties:/data/application.properties
+
+  nats-streaming-1:
+    image: nats-streaming:latest
+    command: -m 8222 --config /conf/nats.conf --store file -dir /data/customdatastore1  --cluster_log_path /data/logs1 --file_sync=true --cluster_sync=true
+    expose:
+      - 4222
+      - 8222
+    ports:
+      - 34221:4222
+      - 38221:8222
+    volumes:
+      - ./tmp/nats/1:/data
+      - ./docker/nats1/nats.conf:/conf/nats.conf
+
+  nats-streaming-2:
+    image: nats-streaming:latest
+    command: -m 8222 --config /conf/nats.conf --store file -dir /data/customdatastore2  --cluster_log_path /data/logs2 --file_sync=true --cluster_sync=true
+    expose:
+      - 4222
+      - 8222
+    ports:
+      - 34222:4222
+      - 38222:8222
+    volumes:
+      - ./tmp/nats/2:/data
+      - ./docker/nats2/nats.conf:/conf/nats.conf
+
+  nats-streaming-3:
+    image: nats-streaming:latest
+    command: -m 8222 --config /conf/nats.conf --store file -dir /data/customdatastore3  --cluster_log_path /data/logs3 --file_sync=true --cluster_sync=true
+    expose:
+      - 4222
+      - 8222
+    ports:
+      - 34223:4222
+      - 38223:8222
+    volumes:
+      - ./tmp/nats/3:/data
+      - ./docker/nats3/nats.conf:/conf/nats.conf
