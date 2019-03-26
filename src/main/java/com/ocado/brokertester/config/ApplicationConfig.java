@@ -1,7 +1,6 @@
 package com.ocado.brokertester.config;
 
 import com.ocado.brokertester.domain.Message;
-import com.ocado.brokertester.volumetester.MessageProcessor;
 import com.ocado.brokertester.volumetester.NatsReceiver;
 import com.ocado.brokertester.volumetester.NatsSender;
 import com.ocado.brokertester.volumetester.VolumeTester;
@@ -24,8 +23,7 @@ public class ApplicationConfig {
 
     private final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
     private final String instanceName = UUID.randomUUID().toString().substring(0, 2);
-    private final String outputQueue = "outputQueue";
-    private final String inputQueue = "inputQueue";
+    private final String inoutQueue = "inoutQueue";
 
     @Bean
     public PrometheusMeterRegistry getPrometheusRegistry() {
@@ -34,19 +32,14 @@ public class ApplicationConfig {
 
     @Bean
     public NatsReceiver inoutQueueReceiver() {
-        return natsReceiver("outputNatsReceiver", outputQueue, volumeTester(), instanceName);
+        return natsReceiver("outputNatsReceiver", inoutQueue, volumeTester(), instanceName);
     }
 
-    @Bean
-    public NatsReceiver inNatsToOutNats() {
-        NatsSender messageSender = natsSender("outputQueueNatsSender", outputQueue);
-        return natsReceiver("inNatsToOutNats", inputQueue, new MessageProcessor(messageSender, prometheusRegistry), instanceName);
-    }
 
     @Bean
     public VolumeTester volumeTester() {
-        NatsSender sender = natsSender("inputNatsSender", inputQueue);
-        return new VolumeTester(sender, prometheusRegistry, Message::getParentId);
+        NatsSender sender = natsSender("inputNatsSender", inoutQueue);
+        return new VolumeTester(sender, prometheusRegistry, Message::getId);
     }
 
     private NatsSender natsSender(String senderName, String queueName) {

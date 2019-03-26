@@ -13,10 +13,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 public class NatsSender {
@@ -51,20 +48,13 @@ public class NatsSender {
         return sc;
     }
 
-    public void send(Message message) {
+    void send(Message message) {
         log.debug("Sending message: {}", message);
         StreamingConnection connection = connect(clusterId, clientId, brokerUrl);
         try {
             byte[] messageBytes = objectMapper.writeValueAsBytes(message);
-            CountDownLatch latch = new CountDownLatch(1);
-            AtomicReference<String> requestId = new AtomicReference<>();
-            String sentMessageId = connection.publish(subject, messageBytes, (nuid, ex) -> handleAck(nuid, ex, latch, requestId));
-            log.debug("Message id: {} after message {} published", sentMessageId, message);
-            latch.await(100, TimeUnit.SECONDS);
-            if (!sentMessageId.equalsIgnoreCase(requestId.get())) {
-                throw new RuntimeException("Did not receive ack for message : " + message.getId());
-            }
-            log.debug("Ack received for id: {}, {}", sentMessageId, message.getId());
+            connection.publish(subject, messageBytes);
+            log.debug("Message sent: {}", message.getId());
         } catch (NullPointerException e) {
             handleReceonnect(e);
             throw new RuntimeException(e);
@@ -88,14 +78,6 @@ public class NatsSender {
         brokerUrl = brokerUrlsList.get(nextUrlIndex);
         log.warn("Closing current connection and connecting to broker " + brokerUrl);
         closeConnection();
-    }
-
-    private void handleAck(String nuid, Exception ex, CountDownLatch latch, AtomicReference<String> requestId) {
-        log.debug("Ack NUID: " + nuid, ex);
-        if (ex == null) {
-            requestId.set(nuid);
-        }
-        latch.countDown();
     }
 
     private synchronized void closeConnection() {
