@@ -61,7 +61,7 @@ public class NatsSender {
             String sentMessageId = connection.publish(subject, messageBytes, (nuid, ex) -> handleAck(nuid, ex, latch, requestId));
             log.debug("Message id: {} after message {} published", sentMessageId, message);
             latch.await(100, TimeUnit.SECONDS);
-            if (!requestId.get().equalsIgnoreCase(sentMessageId)) {
+            if (!sentMessageId.equalsIgnoreCase(requestId.get())) {
                 throw new RuntimeException("Did not receive ack for message : " + message.getId());
             }
             log.debug("Ack received for id: {}, {}", sentMessageId, message.getId());
